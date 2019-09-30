@@ -118,7 +118,7 @@ def generate_batch(data, batch_size, num_skips, skip_window):
 
   You will generate small subset of training data, which is called batch.
   For skip-gram model, you will slide a window
-  and sample training instances from the data insdie the window.
+  and sample training instances from the data inside the window.
 
   Here is a small example.
   Suppose that we have a text: "The quick brown fox jumps over the lazy dog."
@@ -155,7 +155,24 @@ def generate_batch(data, batch_size, num_skips, skip_window):
 
   ===============================================================================
   """
+  batches_generated = 0
+  for central_word_index in range(skip_window, len(data) - skip_window):
+    should_terminate = False
+    # print("Trying central_index: {0}".format(central_word_index))
+    for i in range(central_word_index - skip_window, central_word_index + skip_window + 1):
+      if i == central_word_index:
+         continue
+      if batch_size == batches_generated:
+        should_terminate = True
+        break
+      # print("Inserting ({0}, {1})".format(str(central_word_index), str(i)))
+      batch[batches_generated] = data[central_word_index]
+      labels[batches_generated] = data[i]
+      batches_generated += 1
+    if should_terminate:
+      break
 
+  return batch, labels
 
 
 def build_model(sess, graph, loss_model):
@@ -334,11 +351,10 @@ if __name__ == '__main__':
   #         TODO You must implement this method "generate_batch"
   #         Uncomment below to check batch output
 
-  # batch, labels = generate_batch(data, batch_size=8, num_skips=2, skip_window=1)
-  # for i in range(8):
-  #   print(batch[i], reverse_dictionary[batch[i]],
-  #         '->', labels[i, 0], reverse_dictionary[labels[i, 0]])
-
+  batch, labels = generate_batch(data, batch_size=8, num_skips=2, skip_window=1)
+  for i in range(8):
+    print(batch[i], reverse_dictionary[batch[i]],
+          '->', labels[i, 0], reverse_dictionary[labels[i, 0]])
 
   ####################################################################################
   # Hyper Parameters to config

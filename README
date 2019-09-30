@@ -16,7 +16,7 @@
   You will generate small subset of training data, which is called batch.
 
   For skip-gram model, you will slide a window
-  and sample training instances from the data insdie the window.
+  and sample training instances from the data inside the window.
 
   [Example]
   Suppose that we have a text: "The quick brown fox jumps over the lazy dog."
