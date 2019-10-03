@@ -345,12 +345,12 @@ if __name__ == '__main__':
 
   data_index = 0
 
-
   ####################################################################################
   # Step 3: Test the function that generates a training batch for the skip-gram model.
   #         TODO You must implement this method "generate_batch"
   #         Uncomment below to check batch output
 
+  # Need to test for if data < batch
   batch, labels = generate_batch(data, batch_size=8, num_skips=2, skip_window=1)
   for i in range(8):
     print(batch[i], reverse_dictionary[batch[i]],
@@ -411,5 +411,5 @@ if __name__ == '__main__':
     maybe_create_path(model_path)
     model_filepath = os.path.join(model_path, 'word2vec_%s.model'%(loss_model))
     print("Saving word2vec model as [%s]"%(model_filepath))
-    pickle.dump([dictionary, trained_steps, embeddings], open(model_filepath, 'w'))
+    pickle.dump([dictionary, trained_steps, embeddings], open(model_filepath, 'wb'))
 

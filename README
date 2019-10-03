@@ -85,7 +85,7 @@
   [Difference Vector]
   Recall that vectors are representing some direction in space. 
   If (a, b) and (c, d) pairs are analogous pairs then the transformation from a to b (i.e., some x vector when added to a gives b: a + x = b) 
-  should be highly similar to the transformation from c to d (i.e., some y vector when added to c gives d: b + y = d). 
+  should be highly similar to the transformation from c to d (i.e., some y vector when added to c gives d: c + y = d).
   In other words, the difference vector (b-a) should be similar to difference vector (d-c). 
 
   This difference vector can be thought to represent the relation between the two words. 
@@ -117,7 +117,7 @@ For word2vec
 For analogy task
 
   - word_analogy.py
-    You will write a code in this file for evaluating relation between pairs of words -- called MaxDiff question.
+    You will write a code in this file for evaluating relation between pairs of words -- called MaxDiff equation.
     (https://en.wikipedia.org/wiki/MaxDiff)
     You will generate a file with your predictions following the format of "word_analogy_sample_predictions.txt"
 
