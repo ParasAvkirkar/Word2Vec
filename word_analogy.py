@@ -4,8 +4,8 @@ import numpy as np
 
 
 model_path = './models/'
-loss_model = 'cross_entropy'
-# loss_model = 'nce'
+# loss_model = 'cross_entropy'
+loss_model = 'nce'
 
 model_filepath = os.path.join(model_path, 'word2vec_%s.model'%(loss_model))
 
@@ -111,12 +111,12 @@ class Word_Analogy_Task:
     def write_predictions(self, dev_predictions, output_file_name):
         with open(output_file_name, 'w') as f:
             for case in dev_predictions:
-                line = ["\"" + p[0] + "\"" + ":" + "\"" + p[1] + "\"" for p in case['test_case']]
+                line = ["\"" + p[0] + ":" + p[1] + "\"" for p in case['test_case']]
                 illustrations = case['illus']
-                line.append("\"" + illustrations[0][0] + "\"" + ":" + "\"" + illustrations[0][1])
-                line.append("\"" + illustrations[1][0] + "\"" + ":" + "\"" + illustrations[1][1])
+                line.append("\"" + illustrations[0][0] + ":" + illustrations[0][1] + "\"")
+                line.append("\"" + illustrations[1][0] + ":" + illustrations[1][1] + "\"")
                 f.write(" ".join(line) + "\n")
 
 if __name__ == "__main__":
     word_analogy_task = Word_Analogy_Task()
-    word_analogy_task.execute("word_analogy_dev.txt", "word_analogy_dev_predictions.txt")
+    word_analogy_task.execute("word_analogy_dev.txt", "nce_predictions_first.txt")

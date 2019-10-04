@@ -185,6 +185,7 @@ def build_model(sess, graph, loss_model):
     with tf.device('/cpu:0'):
       # Input data.
       train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
+      # train_inputs = tf.Print(train_inputs, [train_inputs, tf.shape(train_inputs)], "train_inputs", summarize=32)
       train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1])
       valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
 
@@ -193,7 +194,9 @@ def build_model(sess, graph, loss_model):
       # Look up embeddings for inputs.
       embeddings = tf.Variable(
           tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
+      # embeddings = tf.Print(embeddings, [embeddings], "embeddings", summarize=32)
       embed = tf.nn.embedding_lookup(embeddings, train_inputs)
+      # embed = tf.Print(embed, [embed, tf.shape(embed)], "embed", summarize=32)
 
       sm_weights = tf.Variable(
           tf.truncated_normal([vocabulary_size, embedding_size],

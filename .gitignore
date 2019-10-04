@@ -1,5 +1,6 @@
 *.DS_Store
 *pretrained*
+*.txt
 
 # Created by https://www.gitignore.io/api/compressed,pycharm+all
 # Edit at https://www.gitignore.io/?templates=compressed,pycharm+all
