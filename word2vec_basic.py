@@ -31,10 +31,10 @@ import loss_func as tf_func
 
 import pickle
 from collections import namedtuple
+from model_params import ModelParams
 
 
-
-
+model_params = ModelParams()
 Word2Vec = namedtuple('Word2Vec', ['train_inputs', 'train_labels', 'loss', 'optimizer', 'global_step',
                                     'embeddings', 'normalized_embeddings', 'valid_embeddings','similarity', 
                                     'saver','summary', 'summary_writer'])
@@ -175,7 +175,12 @@ def generate_batch(data, batch_size, num_skips, skip_window):
   return batch, labels
 
 
-def build_model(sess, graph, loss_model):
+def get_model_name(batch_size, skip_window, num_skips, num_sampled, max_num_steps, learning_rate, loss_model):
+  format_spec = "_".join(["{" + str(i) + "}" for i in range(7)])
+  params = format_spec.format(batch_size, skip_window, num_skips, num_sampled, max_num_steps, learning_rate, loss_model)
+  return 'word2vec_%s' % (params)
+
+def build_model(sess, graph, loss_model, learning_rate):
   """
   Builds a tensor graph model
   """
@@ -185,7 +190,6 @@ def build_model(sess, graph, loss_model):
     with tf.device('/cpu:0'):
       # Input data.
       train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
-      # train_inputs = tf.Print(train_inputs, [train_inputs, tf.shape(train_inputs)], "train_inputs", summarize=32)
       train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1])
       valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
 
@@ -224,7 +228,7 @@ def build_model(sess, graph, loss_model):
     # tf.summary.scalar('loss', loss)
 
     # Construct the SGD optimizer using a learning rate of 1.0.
-    optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss, global_step=global_step)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
 
     # Compute the cosine similarity between minibatch examples and all embeddings.
     norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keep_dims=True))
@@ -311,9 +315,6 @@ def train(sess, model, data, dictionary, batch_size, num_skips, skip_window,
 
   return final_embeddings
 
-
-
-
 if __name__ == '__main__':
 
   loss_model = 'cross_entropy'
@@ -354,10 +355,10 @@ if __name__ == '__main__':
   #         Uncomment below to check batch output
 
   # Need to test for if data < batch
-  batch, labels = generate_batch(data, batch_size=8, num_skips=2, skip_window=1)
-  for i in range(8):
-    print(batch[i], reverse_dictionary[batch[i]],
-          '->', labels[i, 0], reverse_dictionary[labels[i, 0]])
+  # batch, labels = generate_batch(data, batch_size=8, num_skips=2, skip_window=1)
+  # for i in range(8):
+  #   print(batch[i], reverse_dictionary[batch[i]],
+  #         '->', labels[i, 0], reverse_dictionary[labels[i, 0]])
 
   ####################################################################################
   # Hyper Parameters to config
@@ -386,13 +387,16 @@ if __name__ == '__main__':
   max_num_steps  = 200001
   checkpoint_step = 50000
     
+  learning_rate = 1.0
+
+  batch_size, skip_window, num_skips, num_sampled, max_num_steps, learning_rate = model_params.get_tuning_params()
 
   graph = tf.Graph()
   with tf.Session(graph=graph) as sess:
 
     ####################################################################################
     # Step 4: Build and train a skip-gram model.
-    model = build_model(sess, graph, loss_model)
+    model = build_model(sess, graph, loss_model, learning_rate)
 
     # You must start with the pretrained model. 
     # If you want to resume from your checkpoints, change this path name
@@ -412,7 +416,10 @@ if __name__ == '__main__':
     trained_steps = model.global_step.eval()
 
     maybe_create_path(model_path)
-    model_filepath = os.path.join(model_path, 'word2vec_%s.model'%(loss_model))
+    model_filepath = os.path.join(model_path, get_model_name(batch_size=batch_size, skip_window=skip_window,
+                                                             num_skips=num_skips, num_sampled=num_sampled,
+                                                             max_num_steps=max_num_steps, learning_rate=learning_rate,
+                                                             loss_model=loss_model) + ".model")
     print("Saving word2vec model as [%s]"%(model_filepath))
     pickle.dump([dictionary, trained_steps, embeddings], open(model_filepath, 'wb'))
 
