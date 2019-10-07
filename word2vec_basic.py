@@ -35,6 +35,7 @@ from model_params import ModelParams
 
 
 model_params = ModelParams()
+print("Training: " + str(model_params))
 Word2Vec = namedtuple('Word2Vec', ['train_inputs', 'train_labels', 'loss', 'optimizer', 'global_step',
                                     'embeddings', 'normalized_embeddings', 'valid_embeddings','similarity', 
                                     'saver','summary', 'summary_writer'])
@@ -156,22 +157,21 @@ def generate_batch(data, batch_size, num_skips, skip_window):
   ===============================================================================
   """
   batches_generated = 0
-  for central_word_index in range(skip_window, len(data) - skip_window):
-    should_terminate = False
-    # print("Trying central_index: {0}".format(central_word_index))
-    for i in range(central_word_index - skip_window, central_word_index + skip_window + 1):
-      if i == central_word_index:
+  data_index = max(skip_window, data_index)
+  should_terminate = False
+  while should_terminate != True:
+    for i in range(data_index - skip_window, data_index + skip_window + 1):
+      if i == data_index:
          continue
       if batch_size == batches_generated:
         should_terminate = True
         break
-      # print("Inserting ({0}, {1})".format(str(central_word_index), str(i)))
-      batch[batches_generated] = data[central_word_index]
+      batch[batches_generated] = data[data_index]
       labels[batches_generated] = data[i]
       batches_generated += 1
-    if should_terminate:
-      break
+    data_index = (data_index + 1) % len(data)
 
+  # print("data_index:" +  str(data_index))
   return batch, labels
 
 
@@ -355,10 +355,15 @@ if __name__ == '__main__':
   #         Uncomment below to check batch output
 
   # Need to test for if data < batch
-  # batch, labels = generate_batch(data, batch_size=8, num_skips=2, skip_window=1)
-  # for i in range(8):
-  #   print(batch[i], reverse_dictionary[batch[i]],
-  #         '->', labels[i, 0], reverse_dictionary[labels[i, 0]])
+  # for j in range(3):
+  #   batch, labels = generate_batch(data, batch_size=8, num_skips=2, skip_window=1)
+  #   for i in range(8):
+  #     print(batch[i], reverse_dictionary[batch[i]],
+  #           '->', labels[i, 0], reverse_dictionary[labels[i, 0]])
+  #
+  # if True:
+  #   sys.exit(0)
+
 
   ####################################################################################
   # Hyper Parameters to config
@@ -376,7 +381,7 @@ if __name__ == '__main__':
   valid_examples = np.random.choice(valid_window, valid_size, replace=False)
   num_sampled = 64    # Number of negative examples to sample.
 
-  # summary_path = './summary_%s'%(loss_model)
+  summary_path = './summary_%s'%(loss_model)
   pretrained_model_path = './pretrained/'
 
   checkpoint_model_path = './checkpoints_%s/'%(loss_model)
@@ -388,7 +393,8 @@ if __name__ == '__main__':
   checkpoint_step = 50000
     
   learning_rate = 1.0
-
+  print("Training on: " + str(model_params))
+  # embedding_size = 256
   batch_size, skip_window, num_skips, num_sampled, max_num_steps, learning_rate = model_params.get_tuning_params()
 
   graph = tf.Graph()
@@ -401,6 +407,9 @@ if __name__ == '__main__':
     # You must start with the pretrained model. 
     # If you want to resume from your checkpoints, change this path name
 
+    # TODO: Not using pretrained
+    # print("not using pretrained")
+    print("using pretrained")
     load_pretrained_model(sess, model, pretrained_model_path)
 
 
