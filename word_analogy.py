@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+import operator
 from model_params import ModelParams
 from word2vec_basic import get_model_name
 
@@ -16,7 +17,6 @@ model_filepath = os.path.join(model_path, get_model_name(batch_size=model_params
                                                              loss_model=loss_model) + ".model")
 print(model_filepath)
 print("generating predictions based on: " + model_filepath)
-# word2vec_64_4_8_64_200001_1.0_cross_entropy.model
 
 dictionary, steps, embeddings = pickle.load(open(model_filepath, 'rb'))
 embedding_dim = embeddings[1].shape[0]
@@ -39,9 +39,14 @@ v1 = embeddings[dictionary[word_id]]
 
 ==========================================================================
 """
-
 class Word_Analogy_Task:
-
+    '''
+        Method to read test-cases from web_analogy_dev.txt
+        Returns a list of dictionaries
+        each dictionary is: {truth: [ (first_part_of_pair), (second_part_of_pair), test_case: [ (first_part_of_pair), (second_part_of_pair), ]}
+        Truth is given related pairs having word analogy
+        Test_case is related pairs from whom most and least illustrative pairs to written
+    '''
     def read_test_cases(self, file_name):
         print("Reading test-cases")
         test_cases = []
@@ -83,17 +88,17 @@ class Word_Analogy_Task:
 
         return avg_vector
 
-    def get_avg_diff_dist(self, related_pairs):
-        avg_dist = 0.0
+    def get_avg_diff_length(self, related_pairs):
+        avg_len = 0.0
         for pair in related_pairs:
             key_embedding = embeddings[dictionary[pair[0]]]
             value_embedding = embeddings[dictionary[pair[1]]]
             diff_vec = self.get_diff_vector(key_embedding, value_embedding)
-            avg_dist += np.linalg.norm(diff_vec)
+            avg_len += np.linalg.norm(diff_vec)
 
-        avg_dist = avg_dist/len(related_pairs)
+        avg_len = avg_len/len(related_pairs)
 
-        return avg_dist
+        return avg_len
 
     def get_avg_cossim(self, related_pairs):
         avg_cossim = 0.0
@@ -106,7 +111,7 @@ class Word_Analogy_Task:
 
         return avg_cossim
 
-    def get_most_least_illustration(self, test_cases, avg_vector, avg_dist, avg_cossim):
+    def get_most_least_illustration(self, test_cases, avg_vector, avg_diff_length, avg_cossim):
         max_score = -float("infinity") # Default value beyond minimum possible value of cosine-similarity
         min_score = float("infinity") # Default value beyond maximum possible value of cosine-similarity
 
@@ -118,9 +123,9 @@ class Word_Analogy_Task:
             diff_vec = self.get_diff_vector(key_embedding, value_embedding)
             diff_cossim = self.get_cossim(diff_vec, avg_vector)
             pairwise_cossim = self.get_cossim(key_embedding, value_embedding)
-            absolute_euclid_dist_diff = self.get_absolute_euclid_dist_diff(diff_vec, avg_vector)
-            dist_diff = abs(np.linalg.norm(diff_vec) - avg_dist)
-            score = self.get_score(pairwise_cossim, diff_cossim, absolute_euclid_dist_diff, dist_diff, avg_cossim)
+            absolute_length_diff = self.get_absolute_length_diff(diff_vec, avg_vector)
+            diff_length_difference = abs(np.linalg.norm(diff_vec) - avg_diff_length)
+            score = self.get_score(pairwise_cossim, diff_cossim, absolute_length_diff, diff_length_difference, avg_cossim)
             if max_score < score:
                 max_score = score
                 most_ill = pair
@@ -129,10 +134,13 @@ class Word_Analogy_Task:
                 least_ill = pair
         return (most_ill, least_ill)
 
-    def get_score(self, pairwise_cossim, diff_cossim, absolute_euclid_dist_diff, dist_diff, avg_cossim):
-        return 1.0/(abs(avg_cossim - pairwise_cossim) * dist_diff)
+    def get_score(self, pairwise_cossim, diff_cossim, absolute_length_diff, diff_length_difference, avg_cossim):
+        if loss_model == 'cross_entropy':
+            return pairwise_cossim/(absolute_length_diff * abs(avg_cossim - pairwise_cossim))
+        else:
+            return 1.0/(abs(avg_cossim - pairwise_cossim) * diff_length_difference)
 
-    def get_absolute_euclid_dist_diff(self, v1, v2):
+    def get_absolute_length_diff(self, v1, v2):
         v1_l2_norm = np.linalg.norm(v1)
         v2_l2_norm = np.linalg.norm(v2)
         return abs(v1_l2_norm - v2_l2_norm)
@@ -146,9 +154,9 @@ class Word_Analogy_Task:
         print("execute::Calculating most-least illustrative pairs")
         for case in all_test_cases:
             avg_vector = self.get_avg_diff_vector(case['truth'])
-            avg_dist = self.get_avg_diff_dist(case['truth'])
+            avg_diff_length = self.get_avg_diff_length(case['truth'])
             avg_cossim = self.get_avg_cossim(case['truth'])
-            most_ill, least_ill = self.get_most_least_illustration(case['test_case'], avg_vector, avg_dist, avg_cossim)
+            most_ill, least_ill = self.get_most_least_illustration(case['test_case'], avg_vector, avg_diff_length, avg_cossim)
             case['illus'] = {'most': most_ill, 'least': least_ill}
             dev_predictions.append(case)
         print("execute::Done calculation: {0}".format(str(len(dev_predictions))))
@@ -175,11 +183,15 @@ if __name__ == "__main__":
                    loss_model=loss_model)
     result_file_name = model_name + "_results.txt"
     stats_file_name = model_name + "_stats.txt"
-    word_analogy_task.execute("word_analogy_dev.txt", result_file_name)
-    cmd = "perl score_maxdiff.pl word_analogy_dev_mturk_answers.txt " + result_file_name + " " + stats_file_name
-    print(os.system(cmd))
-    print("cat " + stats_file_name)
-    # print(os.system("cat " + stats_file_name))
+    # word_analogy_task.get_top_nearest()
+
+    result_file_name = "final_predictions_" + result_file_name
+    word_analogy_task.execute("word_analogy_test.txt", result_file_name)
+
+    # word_analogy_task.execute("word_analogy_dev.txt", result_file_name)
+    # cmd = "perl score_maxdiff.pl word_analogy_dev_mturk_answers.txt " + result_file_name + " " + stats_file_name
+    # print(os.system(cmd))
+    # print("cat " + stats_file_name)
 
 # word2vec_128_4_8_64_200001_1.0_cross_entropy.model
 

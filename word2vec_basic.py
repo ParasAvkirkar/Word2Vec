@@ -361,10 +361,8 @@ if __name__ == '__main__':
   #     print(batch[i], reverse_dictionary[batch[i]],
   #           '->', labels[i, 0], reverse_dictionary[labels[i, 0]])
   #
-  # if True:
-  #   sys.exit(0)
 
-
+  data_index = 0
   ####################################################################################
   # Hyper Parameters to config
   batch_size = 128
@@ -394,8 +392,8 @@ if __name__ == '__main__':
     
   learning_rate = 1.0
   print("Training on: " + str(model_params))
-  # embedding_size = 256
   batch_size, skip_window, num_skips, num_sampled, max_num_steps, learning_rate = model_params.get_tuning_params()
+  embedding_size = 256
 
   graph = tf.Graph()
   with tf.Session(graph=graph) as sess:
@@ -408,9 +406,9 @@ if __name__ == '__main__':
     # If you want to resume from your checkpoints, change this path name
 
     # TODO: Not using pretrained
-    # print("not using pretrained")
-    print("using pretrained")
-    load_pretrained_model(sess, model, pretrained_model_path)
+    print("not using pretrained")
+    # print("using pretrained")
+    # load_pretrained_model(sess, model, pretrained_model_path)
 
 
     ####################################################################################

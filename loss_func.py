@@ -19,18 +19,21 @@ def cross_entropy_loss(inputs, true_w):
 
     ==========================================================================
     """
+    input_shape = inputs.get_shape().as_list()
+    n_batch = input_shape[0]
     # Citation: https://datascience.stackexchange.com/questions/15032/how-to-do-batch-inner-product-in-tensorflow
     u0vC = tf.reduce_sum(tf.multiply(true_w, inputs), axis=1)
-    logEU0VC = tf.log(tf.exp(u0vC))
+    epsilon_vec = get_epsilon_vector(n_batch, 0.0000000001)
+    logEU0VC = tf.log(tf.add(tf.exp(u0vC), epsilon_vec))
 
     each_input_product = tf.matmul(inputs, true_w, transpose_b=True)
     each_input_product = tf.exp(each_input_product)
     each_input_product = tf.reduce_sum(each_input_product, axis=1)
-    logDen = tf.log(each_input_product)
-
+    each_input_product = tf.reshape(each_input_product, [n_batch, 1])
+    logDen = tf.log(tf.add(each_input_product, epsilon_vec))
 
     A = logEU0VC
-    B = tf.reshape(logDen, [inputs.get_shape().as_list()[0], 1])
+    B = tf.reshape(logDen, [n_batch, 1])
 
     return tf.subtract(B, A)
 
@@ -50,7 +53,7 @@ def nce_loss(inputs, weights, biases, labels, samples, unigram_prob):
     ==========================================================================
     """
     input_shape = inputs.get_shape().as_list()
-    print(str(input_shape))
+    # print(str(input_shape))
     n_batch = input_shape[0]
     n_embedding = input_shape[1]
     n_samples = len(samples)

@@ -1,187 +1,152 @@
-==========================================================================================
+Runtime Environment: Python 3.6, Tensorflow 1.9
+========================================================================================================
+                    Implementation Details
 
-         Introduction to Natural Laguage Processing Assignment 1
- 
-==========================================================================================
+    model_params.py
 
-1. In this assignment, you will be asked to:
+    Class: ModelParams
+    A class to store parameters to tune model:
+    Batch-Size, Size of skip-window, number of samples from window, number of negative samples, number of training steps, learning rate
 
-  - generate batch for skip-gram model (word2vec_basic.py)
-  - implement two loss functions to train word embeddings (loss_func.py)
-  - tune the parameters for word embeddings 
-  - apply learned word embeddings to word analogy task (word_analogy.py)
-
-
-2. Generating batch
-  You will generate small subset of training data, which is called batch.
-
-  For skip-gram model, you will slide a window
-  and sample training instances from the data inside the window.
-
-  [Example]
-  Suppose that we have a text: "The quick brown fox jumps over the lazy dog."
-  And batch_size = 8, window_size = 3
-
-  "[The quick brown] fox jumps over the lazy dog"
-
-  Context word would be 'quick' and predicting words are 'The' and 'brown'.
-  This will generate training examples:
-       context(x), predicted_word(y)
-          (quick    ,       The)
-          (quick    ,     brown)
-
-  And then move the sliding window.
-  "The [quick brown fox] jumps over the lazy dog"
-  In the same way, we have two more examples:
-      (brown, quick)
-      (brown, fox)
-
-  Moving the window again:
-  "The quick [brown fox jumps] over the lazy dog"
-  We get,
-      (fox, brown)
-      (fox, jumps)
-
-  Finally we get two more instances from the moved window,
-  "The quick brown [fox jumps over] the lazy dog"
-      (jumps, fox)
-      (jumps, over)
-
-  Since now we have 8 training instances, which is the batch size,
-  stop generating this batch and return batch data.
-
-  data_index is the index of a word. You can access a word using data[data_index].
-  batch_size is the number of instances in one batch.
-  num_skips is the number of samples you want to draw in a window(in example, it was 2).
-  skip_windows decides how many words to consider left and right from a context word(so, skip_windows*2+1 = window_size).
-  batch will contains word ids for context words. Dimension is [batch_size].
-  labels will contains word ids for predicting words. Dimension is [batch_size, 1].
+    This class is use to generate samples, train model in word2vec_basic.py
+    And this same class is later used in word_analogy to generate pair-predictions
 
 
-3. Analogies using word vectors
+    word2vec_basic.py
 
-  You will use the word vectors you learned from both approaches(cross entropy and NCE) in the following word analogy task.
+    Method: generate_batch(data, batch_size, num_skips, skip_window)
+    Use data_index to keep track of which batches are returned at every step
+    A flag should_terminate is maintained,
+        which is set to true inside loop when generated batches are enough as per method request
 
-  Each question/task is in the following form. 
-  -------------------------------------------------------------------------------------
-  Consider the following word pairs that share the same relation, R:
-
-      pilgrim:shrine, hunter:quarry, assassin:victim, climber:peak
-  
-  Among these word pairs,
-
-  (1) pig:mud
-  (2) politician:votes
-  (3) dog:bone
-  (4) bird:worm
-
-  Q1. Which word pairs has the MOST illustrative(similar) example of the relation R?
-  Q2. Which word pairs has the LEAST illustrative(similar) example of the relation R?
-  -------------------------------------------------------------------------------------
-
-
-  One simple method to answer those questions will be measuring the similarities of difference vectors.
-
-  [Difference Vector]
-  Recall that vectors are representing some direction in space. 
-  If (a, b) and (c, d) pairs are analogous pairs then the transformation from a to b (i.e., some x vector when added to a gives b: a + x = b) 
-  should be highly similar to the transformation from c to d (i.e., some y vector when added to c gives d: c + y = d).
-  In other words, the difference vector (b-a) should be similar to difference vector (d-c). 
-
-  This difference vector can be thought to represent the relation between the two words. 
-  
-  
-  * Due to the noisy annotation data, the expected accuracy is not high. 
-  The pre-trained model scores 31.4% overall accuracy. Improving this score 1~3% would be your goal. 
-
-
-4. This package contains several files:
-
-For word2vec
-
-  - word2vec_basic.py: 
-    This file is the main script for training word2vec model.
-    You should fill out the part that generates batch from training data.
-    Your trained model will be saved as word2vec.model
-    Usage:
-      python word2vec_basic.py [cross_entropy | nce]
-
-
-  - loss_func.py
-    This file have two loss functions but they should be completed.
-    1. cross_entropy_loss - Loss we used in class. See lecture notes on word representations for details.
-    2. nce_loss - Noise contrastive estimation loss described in the assignment pdf.
-
-  - pretrained/word2vec
-
-For analogy task
-
-  - word_analogy.py
-    You will write a code in this file for evaluating relation between pairs of words -- called MaxDiff equation.
-    (https://en.wikipedia.org/wiki/MaxDiff)
-    You will generate a file with your predictions following the format of "word_analogy_sample_predictions.txt"
-
-  - score_maxdiff.pl
-    a perl script to evaluate YOUR PREDICTIONS on development data
-    Usage:
-      ./score_maxdiff.pl word_analogy_mturk_answers.txt <your prediction file> <output file of result> 
-
-  - word_analogy_dev.txt
-    Data for development. 
-    Each line of this file is divided into "examples" and "choices" by "||".
-        [examples]||[choices]
-    "Examples" and "choices" are delimited by a comma.
-      ex) "tailor:suit","oracle:prophesy","baker:flour"
-
-  - word_analogy_dev_sample_predictions.txt
-    A sample prediction file. Pay attention to the format of this file. 
-    Your prediction file should follow this to use "score_maxdiff.pl" script.
-    Each row is in this format:
-     
-      <pair1> <pair2> <pair3> <pair4> <least_illustrative_pair> <most_illustrative_pair>
-
-    The order of word pairs should match their original order found in "word_analogy_dev.txt".
-
-
-  - word_analogy_dev_mturk_answers.txt
-    This is the answers collected using Amazon mechanical turk for "word_analogy_dev.txt". 
-    The answers in this file is used as the correct answer and used to evaluate your analogy predictions. (using "score_maxdiff.pl")
-    For your information, the answers here are a little bit noisy.
-
-  - word_analogy_test.txt
-    Test data file. When you are done experiment with your model, you will generate predictions for this test data using your best models (NCE/cross entropy).
+    Method: get_model_name(batch_size, skip_window, num_skips, num_sampled, max_num_steps, learning_rate, loss_model)
+    Returns the name of file for a given model in the format
+    word2vec_{batch_size}_{skip_window}_{num_skips}_{num_sampled}_{max_num_steps}_{learning_rate}_{loss_model}
 
 
 
+    word_analogy.py
 
-5. What you should do:
+    Class: WordAnalogy
+        Method: read_test_cases(file_name)
+            to read test-cases from given file (web_analogy_dev.txt)
+                Returns a list of dictionaries
+                each dictionary is: {truth: [ (first_part_of_pair, second_part_of_pair), (,), (,)], test_case: [ (first_part_of_pair, second_part_of_pair), (,), (,), ]}
+                Truth is given related pairs having word analogy
+                Test_case is related pairs from whom most and least illustrative pairs to written
 
-  1. Implement batch generation
-  2. Implement Cross Entropy Loss 
-  3. Implement NCE Loss
-  4. Try different parameters to train your word2vec model
-  5. Write a code to evaluate relations between word pairs
-  6. Find the least illustrative pair and most illustrative pair among four pairs of words.
+        Method; get_diff_vector():
+            Returns a difference vector
+
+        Method: get_avg_diff_vector
+            Returns an average difference vector, for given list of related-pairs
+
+        Method: get_avg_cossim
+            Returns an average of cosine similarity calculated between a related pair among list of related pairs
+            E.g: (student, essay), (programmer, program) -> ( cosine(student, essay) + cosine(programmer, program) ) / 2
+
+        Method: get_avg_diff_length
+            Returns an average of length of difference vector among list of related pairs
+            E.g: (student, essay), (programmer, program) -> ( magnitude(student - essay) + magnitude(programmer - program) ) / 2
+
+        Method: execute()
+            Processes in each given ground truth related pairs and query related pairs
+
+        Method: get_most_least_illustration()
+            Generates most illustrative and least illustrative pairs based on some score
+
+        Method: get_score()
+            Generates score on the basis of type of model
+            Terms:
+            pairwise_cossim -> cosine similarity in a given pair, (student, essay) -> cosine(student, essay)
+            (a) absolute_length_diff ->  For a given average of difference vectors and a particular average vector, calculates their absolute length difference
+            (b) diff_length_difference -> For a given average length for a set of difference vectors, calculate their difference with a query difference vector
+            (a) and (b) may seem similar at first glance, but are different
+            avg_cossim -> average of cosine similarity on a list of true related pairs
+
+===================================================================================================
+
+                    Similarity Measures for word_analogy
+
+Multiple similarity measures were explored
+Examples:
+->1.0/dist_diff
+-> 1.0/ absolute_euclid_dist_diff
+-> pairwise_cossim
+-> diff_cossim
+-> 1.0/abs(avg_cossim - pairwise_cossim)
+-> 1.0/(absolute_euclid_dist_diff * abs(avg_cossim - pairwise_cossim) )
+-> pairwise_cossim/(absolute_euclid_dist_diff * abs(avg_cossim - pairwise_cossim) )
+-> pairwise_cossim / (absolute_euclid_dist_diff)
+
+Meaning of terms in different measures:
+1.  pairwise_cossim -> 
+  a.  cosine similarity in a given pair, (student, essay) -> cosine(student, essay)
+  b.  A naïve estimate of by how much quantity a pair is similar to each other
+  c.  The more it is, higher the probability of a given pair to be analogous to each other (directly proportional)
+2.  absolute_length_diff ->  
+  a.  For a given average of difference vectors and a particular vector, calculates their absolute length difference
+  b.  Estimates how close our the lengths of two related pairs
+  c.  The less it is, more analogous are the pair to each other (inversely proportional)
+3.  diff_length_difference ->
+  a.  For a given average length for a set of difference vectors, calculate their difference with a length of query difference vector
+  b.  The less it is, more analogous are the pair to each other (inversely proportional)
+4.  avg_cossim
+  a.  average of cosine similarity on a list of true related pairs
+5.  diff_cossim
+  a.  cosine similarity between average difference vector and a particular difference vector
+  b.  The more it is, higher the probability of a given pair to be analogous ot each other (directly proportional)
+Note: 2 and 3 may seem similar, but are different.
+ (2) tries to match the magnitude of the average of true difference vectors to the magnitude of query difference vector,
+(3) tries to match the average of magnitudes of true difference vectors to the magnitude of query difference vector
+
+The best similarity measures were evaluated by training cross-entropy and nce loss based models on default parameters and evaluating their accuracy against given word_analogy_mturk queries
+
+Best similarity measure for cross-entropy: 
+    pairwise_cossim/(absolute_length_diff * abs(avg_cossim - pairwise_cossim))
+
+    Possible reason: 
+    Pair wise cosine similarity ensures that the given pair belong to same word space
+    E.g (student:essay) , 'student' and 'essay' belong to same word-space of education related words
+    Absolute length difference ensures that the magnitude of average difference vector should be as close 
+    to magnitude of difference vector of a particular pair, thus satisfying our word analogy goal
+    Absolute difference of average cosine similarity and pair-wise cosine similarity ensures that
+    the amount of similarity in a given difference vectors matches the amount of similarity of the pair to be evaluated
+
+Best similarity measure for noise-contrastive-estimation: 
+    1.0/(abs(avg_cossim - pairwise_cossim) * diff_length_difference)
+
+    Possible reason: 
+    Nature of the embeddings made from nce-loss, which are trained on the basis of binary logistic regression
+    may detect that absolute difference of average cosine similarity and pair-wise cosine similarity
+    are more valuable than plain magnitude difference.
 
 
-6. What you should submit:
-  
-  ** PAY ATTENTION TO THE FILENAMES!!! 
-  I will use scripts to organize your codes/files. 
+==============================================================================
 
-  Create a single zip file ( <SBUID>.zip ) contains the following files:
-      1. word2vec_basic.py
-      2. loss_func.py
-      3. your best word2vec models for Cross Entroy loss and NCE loss
-        - word2vec_cross_entropy.model
-        - word2vec_nce.model
-      4. word_analogy.py
-      5. Prediction on data generated for word_analogy_test.txt
-        - word_analogy_test_predictions_cross_entropy.txt
-        - word_analogy_test_predictions_nce.txt
-      6. README file with explanation of your implementation
-      7. Report as detailed in the assignment pdf
-        - report_<SBUID>.pdf
+                    Experiment Configuration and Training Steps
 
+Loss cross entropy:
+
+batch_size = 64, 256
+skip_window = 2, 8
+learning_rate = 2.0
+embedding_size = 256
+num_steps = 900001
+
+Best Model: 
+batch_size=128, skip_window=4, num_skips=8, learning_rate=1.0, embedding_size = 256, num_steps = 900001
+
+
+Loss NCE:
+batch_size = 32
+skip_window = 2, 8
+num_sampled = 32, 8
+num_steps = 400001
+
+Best Model: 
+batch_size = 128 skip_window = 8
+num_skips = 16 num_sampled = 8
+max_num_steps = 200001 learning_rate = 1.0
 
 
